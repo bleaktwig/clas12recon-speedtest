@@ -9,7 +9,7 @@ usage() {
     echo "    -n <nevents>   Number of events per job. Default is 10.000."
     echo "    -j <njobs>     Number of parallel jobs per version. Default is 1."
     echo "    -y <yaml>      Yaml file used for the test. Default is dc.yaml."
-    echo "    -i <inputfile> Location of input file to use. Default is [...]"
+    echo "    -i <inputfile> Location of input file to use. Default is [...]."
     echo "    <cn>           Location of (one or more) CLAS12 offline software versions to use."
     echo ""
     echo "    NOTE. The total number of jobs created will be 2*n*njobs, where n is the number of"
@@ -35,10 +35,10 @@ done
 shift $((OPTIND -1))
 
 # Give optargs a default value if none is given.
-if [ ! -n "$NEVENTS" ];   then NEVENTS=10000;   fi
-if [ ! -n "$NJOBS" ];     then NJOBS=1;         fi
-if [ ! -n "$YAML" ];      then YAML="dc.yaml";  fi
-if [ ! -n "$INPUTFILE" ]; then INPUTFILE="..."; fi
+if [ ! -n "$NEVENTS" ];   then NEVENTS=10000;        fi
+if [ ! -n "$NJOBS" ];     then NJOBS=1;              fi
+if [ ! -n "$YAML" ];      then YAML="yaml/all.yaml"; fi
+if [ ! -n "$INPUTFILE" ]; then INPUTFILE="...";      fi
 
 # Check args.
 if [ "$NEVENTS" -le 0 ]; then echo "Number of events can't be 0 or negative!"; usage; fi
@@ -50,6 +50,7 @@ if [ ! -n "$1" ];        then echo "missing CLAS12 versions.";                 u
 # Capture positional arguments.
 CLAS12VERS=( "$@" ) # Get CLAS12 software versions from positional args.
 
+# NOTE. Temporary code.
 echo "  * NEVENTS    = $NEVENTS"
 echo "  * NJOBS      = $NJOBS"
 echo "  * YAML       = $YAML"
@@ -60,20 +61,15 @@ for i in "${CLAS12VERS[@]}"; do echo "        $i"; done
 echo "    }"
 echo ""
 
-# TODO. Make sure that this runs over graalvm.
-
-# TODO. INSTALL CLARA WITH SAID CLAS12 VERSIONS.
-# TODO. SETUP RUN CONDITIONS.
-# TODO. RUN!
-# TODO. Write output to well-formatted file.
-
 INDIR="$PWD/in"
 OUTDIR="$PWD/out"
 JUNKDIR="$PWD/junk"
 LOGDIR="$PWD/log"
 
-for CLAS12VER in "${CLAS12VERS[@]}"
-do
+# TODO. Copy and reduce file to NEVENTS before running to speed copying up and reduce disk usage.
+
+# TODO. FINISHING SETTING UP RUN CONDITIONS.
+for CLAS12VER in "${CLAS12VERS[@]}"; do
     # --+ recon-util +----------------------------------
     export MALLOC_ARENA_MAX=1
     RECON="$CLAS12VER/coatjava/bin/"
@@ -82,24 +78,26 @@ do
     for i in "${ADDR[@]}"; do FILENAME=$i; done # Dirty but it gets the job done.
     for ((JOB=0;JOB<$NJOBS;++JOB)); do
         IN="$FILENAME.recon-util-$JOB.hipo"
-        if ! cp "$INPUTFILE" "$INDIR/$IN"; then
-            echo "$INPUTFILE doesn't exist!"
-            exit 1
-        fi
+        cp "$INPUTFILE" "$INDIR/$IN"
         echo "recon-util: $IN"
+        # TODO. RUN!
     done
 
     # --+ clara +-------------------------------------------
     # ulimit -u 49152
     unset CLARA_MONITOR_FE
     export CLARA_USER_DATA="$JUNKDIR"
+
+    # TODO. INSTALL CLARA FROM $CLAS12VER.
     for ((JOB=0;JOB<$NJOBS;++JOB)); do
         IN="$FILENAME.clara-$JOB.hipo"
         cp "$INPUTFILE" "$INDIR/$IN"
         echo "clara:      $IN"
+        # TODO. RUN!
     done
-
 done
+
+# TODO. Write output to well-formatted file.
 
 # CLARA13="/work/clas12/users/benkel/dc-optimization/clara-versions/upstream"
 # CLARA17="/work/clas12/users/benkel/dc-optimization/clara-versions/fork"
