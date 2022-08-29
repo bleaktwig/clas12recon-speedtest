@@ -1,17 +1,17 @@
-#!/bin/sh
+#!/bin/bash
 
 usage() {
-    echo "Usage: $0 [-h] [-n <NEVENTS>] [-j <NJOBS>] [-y <YAML>] [-i <INPUTFILE>] <CLAS12VER>"
+    echo "usage: $0 [-h] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
     echo "    -h             Display this usage message."
-    echo "    -n <NEVENTS>   Number of events per job. Default is 10.000."
-    echo "    -j <NJOBS>     Number of parallel jobs. Default is 1."
-    echo "    -y <YAML>      Yaml file used for the test. Default is dc.yaml."
-    echo "    -i <INPUTFILE> Location of input file to use. Default is [...]"
-    echo "    <CLAS12VER>    Location of CLAS12 offline reconstruction to use."
+    echo "    -n <nevents>   Number of events per job. Default is 10.000."
+    echo "    -j <njobs>     Number of parallel jobs. Default is 1."
+    echo "    -y <yaml>      Yaml file used for the test. Default is dc.yaml."
+    echo "    -i <inputfile> Location of input file to use. Default is [...]"
+    echo "    <cn>           Location of (one or more) CLAS12 offline software versions to use."
     exit 1
 }
 
-while getopts "hn:j:" opt; do
+while getopts "hn:j:y:i:" opt; do
     case "${opt}" in
         \? ) usage;;
         h  ) usage;;
@@ -22,35 +22,33 @@ while getopts "hn:j:" opt; do
     esac
 done
 shift $((OPTIND -1))
-CLAS12VER=$1
 
 if [ ! -n "$NEVENTS" ];   then NEVENTS=10000;   fi
 if [ ! -n "$NJOBS" ];     then NJOBS=1;         fi
 if [ ! -n "$YAML" ];      then YAML="dc.yaml";  fi
 if [ ! -n "$INPUTFILE" ]; then INPUTFILE="..."; fi
-if [ ! -n "$CLAS12VER" ]; then echo "missing CLAS12 version."; usage; fi
+if [ ! -n "$1" ];         then echo "missing CLAS12 versions."; usage; fi
+CLAS12VERS=( "$@" ) # Get CLAS12 software versions from positional args.
 
-echo ""
-echo "  * NEVENTS   = $NEVENTS"
-echo "  * NJOBS     = $NJOBS"
-echo "  * YAML      = $YAML"
-echo "  * INPUTFILE = $INPUTFILE"
-echo "  * CLAS12VER = $CLAS12VER"
-echo ""
+echo "  * NEVENTS    = $NEVENTS"
+echo "  * NJOBS      = $NJOBS"
+echo "  * YAML       = $YAML"
+echo "  * INPUTFILE  = $INPUTFILE"
+echo "  * CLAS12VERS = {"
+for i in "${CLAS12VERS[@]}"; do echo "        $i"; done
+echo "    }"
 
 # TODO. Make sure that this runs over graalvm.
 
-# TODO. GET 1 (or more) CLAS12 VERSIONS FROM POSITIONAL ARG.
 # TODO. INSTALL CLARA WITH SAID CLAS12 VERSIONS.
 # TODO. SETUP RUN CONDITIONS.
 # TODO. RUN!
 # TODO. Write output to well-formatted file.
 
-# JAVA_OPTS_NOOPTS=''
 # JAVA_OPTS_SERIALGC='-XX:+UseSerialGC'
 # JAVA_OPTS_JVMCI='-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler'
-# JAVA_OPTS_BOTH='-XX:+UseSerialGC -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler'
-#
+
+
 # # --+ recon-util +--------------------------------------
 # export MALLOC_ARENA_MAX=1
 #
