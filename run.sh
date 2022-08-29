@@ -1,8 +1,10 @@
 #!/bin/bash
 
 usage() {
-    echo "usage: $0 [-h] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
+    echo "usage: $0 [-hse] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
     echo "    -h             Display this usage message."
+    echo "    -s             Use JVM serial garbage collector."
+    echo "    -e             Use experimental options (-XX:+UseJVMCICompiler)"
     echo "    -n <nevents>   Number of events per job. Default is 10.000."
     echo "    -j <njobs>     Number of parallel jobs. Default is 1."
     echo "    -y <yaml>      Yaml file used for the test. Default is dc.yaml."
@@ -11,10 +13,12 @@ usage() {
     exit 1
 }
 
-while getopts "hn:j:y:i:" opt; do
+while getopts "hsen:j:y:i:" opt; do
     case "${opt}" in
         \? ) usage;;
         h  ) usage;;
+        s  ) JAVA_OPTS=$JAVA_OPTS' -XX:+UseSerialGC';;
+        e  ) JAVA_OPTS=$JAVA_OPTS' -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler';;
         n  ) NEVENTS=${OPTARG};;
         j  ) NJOBS=${OPTARG};;
         y  ) YAML=${OPTARG};;
@@ -34,6 +38,7 @@ echo "  * NEVENTS    = $NEVENTS"
 echo "  * NJOBS      = $NJOBS"
 echo "  * YAML       = $YAML"
 echo "  * INPUTFILE  = $INPUTFILE"
+echo "  * JAVA_OPTS  = $JAVA_OPTS"
 echo "  * CLAS12VERS = {"
 for i in "${CLAS12VERS[@]}"; do echo "        $i"; done
 echo "    }"
