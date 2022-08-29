@@ -1,18 +1,25 @@
 #!/bin/bash
 
 usage() {
+    echo ""
     echo "usage: $0 [-hse] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
     echo "    -h             Display this usage message."
     echo "    -s             Use JVM serial garbage collector."
     echo "    -e             Use experimental options (-XX:+UseJVMCICompiler)"
     echo "    -n <nevents>   Number of events per job. Default is 10.000."
-    echo "    -j <njobs>     Number of parallel jobs. Default is 1."
+    echo "    -j <njobs>     Number of parallel jobs per version. Default is 1."
     echo "    -y <yaml>      Yaml file used for the test. Default is dc.yaml."
     echo "    -i <inputfile> Location of input file to use. Default is [...]"
     echo "    <cn>           Location of (one or more) CLAS12 offline software versions to use."
+    echo ""
+    echo "    NOTE. The total number of jobs created will be 2*n*njobs, where n is the number of"
+    echo "          versions specified as positional arguments. For a fair test, this number"
+    echo "          shouldn't surpass number of available physical cores!"
+    echo ""
     exit 1
 }
 
+# Get args.
 while getopts "hsen:j:y:i:" opt; do
     case "${opt}" in
         \? ) usage;;
@@ -27,11 +34,20 @@ while getopts "hsen:j:y:i:" opt; do
 done
 shift $((OPTIND -1))
 
+# Give optargs a default value if none is given.
 if [ ! -n "$NEVENTS" ];   then NEVENTS=10000;   fi
 if [ ! -n "$NJOBS" ];     then NJOBS=1;         fi
 if [ ! -n "$YAML" ];      then YAML="dc.yaml";  fi
 if [ ! -n "$INPUTFILE" ]; then INPUTFILE="..."; fi
-if [ ! -n "$1" ];         then echo "missing CLAS12 versions."; usage; fi
+
+# Check args.
+if [ "$NEVENTS" -le 0 ]; then echo "Number of events can't be 0 or negative!"; usage; fi
+if [ "$NJOBS"   -le 0 ]; then echo "Number of jobs can't be 0 or negative!";   usage; fi
+if [ ! -f "$YAML" ];     then echo "File $YAML not found!";                    usage; fi
+if [ ! -f $INPUTFILE ];  then echo "File $INPUTFILE not found!";               usage; fi
+if [ ! -n "$1" ];        then echo "missing CLAS12 versions.";                 usage; fi
+
+# Capture positional arguments.
 CLAS12VERS=( "$@" ) # Get CLAS12 software versions from positional args.
 
 echo "  * NEVENTS    = $NEVENTS"
@@ -42,6 +58,7 @@ echo "  * JAVA_OPTS  = $JAVA_OPTS"
 echo "  * CLAS12VERS = {"
 for i in "${CLAS12VERS[@]}"; do echo "        $i"; done
 echo "    }"
+echo ""
 
 # TODO. Make sure that this runs over graalvm.
 
@@ -50,49 +67,43 @@ echo "    }"
 # TODO. RUN!
 # TODO. Write output to well-formatted file.
 
-# JAVA_OPTS_SERIALGC='-XX:+UseSerialGC'
-# JAVA_OPTS_JVMCI='-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler'
+INDIR="$PWD/in"
+OUTDIR="$PWD/out"
+JUNKDIR="$PWD/junk"
+LOGDIR="$PWD/log"
 
+for CLAS12VER in "${CLAS12VERS[@]}"
+do
+    # --+ recon-util +----------------------------------
+    export MALLOC_ARENA_MAX=1
+    RECON="$CLAS12VER/coatjava/bin/"
 
-# # --+ recon-util +--------------------------------------
-# export MALLOC_ARENA_MAX=1
-#
-# RECON01="/work/clas12/users/benkel/dc-optimization/clas12-versions/upstream/coatjava/bin/speedtest-nochanges"
-# RECON02="/work/clas12/users/benkel/dc-optimization/clas12-versions/upstream/coatjava/bin/speedtest-noserialgc"
-# RECON03="/work/clas12/users/benkel/dc-optimization/clas12-versions/upstream/coatjava/bin/speedtest-experimentaloptions"
-# RECON04="/work/clas12/users/benkel/dc-optimization/clas12-versions/upstream/coatjava/bin/speedtest-both"
-#
-# RECON05="/work/clas12/users/benkel/dc-optimization/clas12-versions/fork/coatjava/bin/speedtest-nochanges"
-# RECON06="/work/clas12/users/benkel/dc-optimization/clas12-versions/fork/coatjava/bin/speedtest-noserialgc"
-# RECON07="/work/clas12/users/benkel/dc-optimization/clas12-versions/fork/coatjava/bin/speedtest-experimentaloptions"
-# RECON08="/work/clas12/users/benkel/dc-optimization/clas12-versions/fork/coatjava/bin/speedtest-both"
-#
-# RECON09="/work/clas12/users/benkel/dc-optimization/clas12-versions/matrixtests/coatjava/bin/speedtest-nochanges"
-# RECON10="/work/clas12/users/benkel/dc-optimization/clas12-versions/matrixtests/coatjava/bin/speedtest-noserialgc"
-# RECON11="/work/clas12/users/benkel/dc-optimization/clas12-versions/matrixtests/coatjava/bin/speedtest-experimentaloptions"
-# RECON12="/work/clas12/users/benkel/dc-optimization/clas12-versions/matrixtests/coatjava/bin/speedtest-both"
-#
-# # --+ clara +-------------------------------------------
-# ulimit -u 49152
-# unset CLARA_MONITOR_FE
-# export CLARA_USER_DATA="/volatile/clas12/benkel/junk"
-#
+    IFS='/' read -ra ADDR <<< "$CLAS12VER"
+    for i in "${ADDR[@]}"; do FILENAME=$i; done # Dirty but it gets the job done.
+    for ((JOB=0;JOB<$NJOBS;++JOB)); do
+        IN="$FILENAME.recon-util-$JOB.hipo"
+        if ! cp "$INPUTFILE" "$INDIR/$IN"; then
+            echo "$INPUTFILE doesn't exist!"
+            exit 1
+        fi
+        echo "recon-util: $IN"
+    done
+
+    # --+ clara +-------------------------------------------
+    # ulimit -u 49152
+    unset CLARA_MONITOR_FE
+    export CLARA_USER_DATA="$JUNKDIR"
+    for ((JOB=0;JOB<$NJOBS;++JOB)); do
+        IN="$FILENAME.clara-$JOB.hipo"
+        cp "$INPUTFILE" "$INDIR/$IN"
+        echo "clara:      $IN"
+    done
+
+done
+
 # CLARA13="/work/clas12/users/benkel/dc-optimization/clara-versions/upstream"
 # CLARA17="/work/clas12/users/benkel/dc-optimization/clara-versions/fork"
 # CLARA21="/work/clas12/users/benkel/dc-optimization/clara-versions/matrixtests"
-#
-# JAVA_OPTS_NOCHANGES='-XX:+UseSerialGC'
-# JAVA_OPTS_NOSERIALGC=''
-# JAVA_OPTS_EXPERIMENTALOPTS='-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler'
-# JAVA_OPTS_BOTH='-XX:+UseSerialGC -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler'
-#
-# # --+ Files +-------------------------------------------
-# INDIR="/volatile/clas12/benkel/in-6377"
-# OUTDIR="/volatile/clas12/benkel/out"
-# YAML="/volatile/clas12/benkel/data.yaml"
-#
-# # --+ Number of events +--------------------------------
-# NEVENTS="10000"
 #
 # # --+ Run! +--------------------------------------------
 # $RECON01 -i $INDIR/01.hipo -o $OUTDIR/01.hipo -y $YAML -n $NEVENTS > reconutil_upstream_nochanges.txt &
