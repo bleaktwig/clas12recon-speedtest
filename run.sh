@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# TODO. RUN THESE WHEN YOU HAVE A DECENT INTERNET CONNECTION.
+# wget https://userweb.jlab.org/~gurjyan/clara-cre/linux-i586-11.tar.gz
+# wget https://userweb.jlab.org/~gurjyan/clara-cre/macosx-64-11.tar.gz
+
 usage() {
     echo ""
     echo "usage: $0 [-hse] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
@@ -71,9 +75,10 @@ JUNKDIR="$PWD/junk"
 LOGDIR="$PWD/log"
 
 # Clear out $INDIR, $OUTDIR, and $CLARADIR.
-rm $INDIR/*.hipo  2> /dev/null
-rm $INDIR/*.txt   2> /dev/null
-rm $OUTDIR/*.hipo 2> /dev/null
+rm $INDIR/*.hipo    2> /dev/null
+rm $INDIR/*.txt     2> /dev/null
+rm $OUTDIR/*.hipo   2> /dev/null
+rm -rf $CLARADIR/*/ 2> /dev/null
 
 # Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
 # TODO. Add banks needed by CVT.
@@ -97,109 +102,41 @@ for ((JOB=0;JOB<$NJOBS;++JOB)); do
         echo "$RUNNAME.hipo" > "$INDIR/$RUNNAME.txt"
 
         # Install clara from $CLAS12VER.
-        # cd "$CLARADIR"
-        # tar -C "$CLAS12VER" -czf "$CLARADIR/coatjava-$RUNNAME.tar.gz" "coatjava"
-        # export CLARA_HOME="$CLARADIR/$RUNNAME"
-        # ./install-claracre-clas.sh "$RUNNAME"
-        # rm "coatjava.tar.gz"
-        # cd - > /dev/null
+        cd "$CLARADIR"
+        tar -C "$CLAS12VER" -czf "$CLARADIR/coatjava-$RUNNAME.tar.gz" "coatjava"
+        export CLARA_HOME="$CLARADIR/$RUNNAME"
+        ./install-claracre-clas.sh "$RUNNAME"
+        rm "coatjava-$RUNNAME.tar.gz"
+        cd - > /dev/null
     done
 done
 rm $TMPFILE
 
 # --+ RUN +-----------------------------------------------------------------------------------------
-for ((JOB=0;JOB<$NJOBS;++JOB)); do
-    for CLAS12VER in "${CLAS12VERS[@]}"; do
-        # --+ recon-util +--------------------------------------------------------------------------
-        RUNNAME="$RECONNAME.recon-util-$JOB"
-        export MALLOC_ARENA_MAX=1
-        RECON="$CLAS12VER/coatjava/bin/"
-
-        # TODO. Run.
-
-        # --+ clara +-------------------------------------------------------------------------------
-        RUNNAME="$RECONNAME.clara-$JOB.hipo"
-        # ulimit -u 49152
-        unset CLARA_MONITOR_FE
-        export CLARA_USER_DATA="$JUNKDIR"
-
-        # TODO. Run.
-
-    done
-done
+# for ((JOB=0;JOB<$NJOBS;++JOB)); do
+#     for CLAS12VER in "${CLAS12VERS[@]}"; do
+#         # --+ recon-util +--------------------------------------------------------------------------
+#         RUNNAME="$RECONNAME.recon-util-$JOB"
+#         export MALLOC_ARENA_MAX=1
+#         RECON="$CLAS12VER/coatjava/bin/recon-util"
+#
+#         # Run.
+#         $RECON -i "$INDIR/$RUNNAME.hipo" -o "$OUTDIR/$RUNNAME.hipo" -y $YAML -n $NEVENTS > "$LOGDIR/$RUNNAME.txt" &
+#
+#
+#         # --+ clara +-------------------------------------------------------------------------------
+#         RUNNAME="$RECONNAME.clara-$JOB"
+#         # ulimit -u 49152
+#         unset CLARA_MONITOR_FE
+#         export CLARA_USER_DATA="$JUNKDIR"
+#         export CLARA_HOME="$CLARADIR/$RUNNAME"
+#         export CLAS12DIR="$CLARA_HOME/plugins/clas12"
+#         export JAVA_OPTS="$JAVA_OPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
+#
+#         # Run.
+#         CLARA_HOME/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s $RUNNAME $YAML "$INDIR/$RUNNAME.txt" > "$LOGDIR/$RUNNAME.txt" &
+#         sleep 5
+#     done
+# done
 
 # TODO. Write output to well-formatted file?
-
-# CLARA13="/work/clas12/users/benkel/dc-optimization/clara-versions/upstream"
-# CLARA17="/work/clas12/users/benkel/dc-optimization/clara-versions/fork"
-# CLARA21="/work/clas12/users/benkel/dc-optimization/clara-versions/matrixtests"
-#
-# # --+ Run! +--------------------------------------------
-# $RECON01 -i $INDIR/01.hipo -o $OUTDIR/01.hipo -y $YAML -n $NEVENTS > reconutil_upstream_nochanges.txt &
-# $RECON02 -i $INDIR/02.hipo -o $OUTDIR/02.hipo -y $YAML -n $NEVENTS > reconutil_upstream_noserialgc.txt &
-# $RECON03 -i $INDIR/03.hipo -o $OUTDIR/03.hipo -y $YAML -n $NEVENTS > reconutil_upstream_experimentaloptions.txt &
-# $RECON04 -i $INDIR/04.hipo -o $OUTDIR/04.hipo -y $YAML -n $NEVENTS > reconutil_upstream_both.txt &
-# $RECON05 -i $INDIR/05.hipo -o $OUTDIR/05.hipo -y $YAML -n $NEVENTS > reconutil_fork_nochanges.txt &
-# $RECON06 -i $INDIR/06.hipo -o $OUTDIR/06.hipo -y $YAML -n $NEVENTS > reconutil_fork_noserialgc.txt &
-# $RECON07 -i $INDIR/07.hipo -o $OUTDIR/07.hipo -y $YAML -n $NEVENTS > reconutil_fork_experimentaloptions.txt &
-# $RECON08 -i $INDIR/08.hipo -o $OUTDIR/08.hipo -y $YAML -n $NEVENTS > reconutil_fork_both.txt &
-# $RECON09 -i $INDIR/09.hipo -o $OUTDIR/09.hipo -y $YAML -n $NEVENTS > reconutil_matrixtests_nochanges.txt &
-# $RECON10 -i $INDIR/10.hipo -o $OUTDIR/10.hipo -y $YAML -n $NEVENTS > reconutil_matrixtests_noserialgc.txt &
-# $RECON11 -i $INDIR/11.hipo -o $OUTDIR/11.hipo -y $YAML -n $NEVENTS > reconutil_matrixtests_experimentaloptions.txt &
-# $RECON12 -i $INDIR/12.hipo -o $OUTDIR/12.hipo -y $YAML -n $NEVENTS > reconutil_matrixtests_both.txt &
-#
-# # Clara upstream
-# export CLARA_HOME="$CLARA13"
-# export CLAS12DIR="$CLARA_HOME/plugins/clas12"
-# export JAVA_OPTS="$JAVA_OPTS_NOCHANGES -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA13/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-13" $YAML "$INDIR/13.txt" > clara_upstream_nochanges.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_NOSERIALGC -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA13/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-14" $YAML "$INDIR/14.txt" > clara_upstream_noserialgc.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_EXPERIMENTALOPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA13/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-15" $YAML "$INDIR/15.txt" > clara_upstream_experimentaloptions.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_BOTH -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA13/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-16" $YAML "$INDIR/16.txt" > clara_upstream_both.txt &
-# sleep 5
-#
-# # Clara fork
-# export CLARA_HOME="$CLARA17"
-# export CLAS12DIR="$CLARA_HOME/plugins/clas12"
-# export JAVA_OPTS="$JAVA_OPTS_NOCHANGES -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA17/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-17" $YAML "$INDIR/17.txt" > clara_fork_nochanges.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_NOSERIALGC -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA17/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-18" $YAML "$INDIR/18.txt" > clara_fork_noserialgc.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_EXPERIMENTALOPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA17/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-19" $YAML "$INDIR/19.txt" > clara_fork_experimentaloptions.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_BOTH -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA17/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-20" $YAML "$INDIR/20.txt" > clara_fork_both.txt &
-# sleep 5
-#
-# # Clara matrixtests
-# export CLARA_HOME="$CLARA21"
-# export CLAS12DIR="$CLARA_HOME/plugins/clas12"
-# export JAVA_OPTS="$JAVA_OPTS_NOCHANGES -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA21/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-21" $YAML "$INDIR/21.txt" > clara_matrixtests_nochanges.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_NOSERIALGC -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA21/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-22" $YAML "$INDIR/22.txt" > clara_matrixtests_noserialgc.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_EXPERIMENTALOPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA21/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-23" $YAML "$INDIR/23.txt" > clara_matrixtests_experimentaloptions.txt &
-# sleep 5
-#
-# export JAVA_OPTS="$JAVA_OPTS_BOTH -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-# $CLARA21/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s "clara-24" $YAML "$INDIR/24.txt" > clara_matrixtests_both.txt &
