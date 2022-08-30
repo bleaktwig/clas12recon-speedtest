@@ -46,7 +46,7 @@ if [ "$NEVENTS" -le 0 ]; then echo "Number of events can't be 0 or negative!"; u
 if [ "$NJOBS"   -le 0 ]; then echo "Number of jobs can't be 0 or negative!";   usage; fi
 if [ ! -f "$YAML" ];     then echo "File $YAML not found!";                    usage; fi
 if [ ! -f $INPUTFILE ];  then echo "File $INPUTFILE not found!";               usage; fi
-if [ ! -n "$1" ];        then echo "missing CLAS12 versions.";                 usage; fi
+if [ ! -n "$1" ];        then echo "missing CLAS12 software versions.";        usage; fi
 
 # Capture positional arguments.
 CLAS12VERS=( "$@" ) # Get CLAS12 software versions from positional args.
@@ -73,37 +73,34 @@ LOGDIR="$PWD/log"
 # Clear out $INDIR, $OUTDIR, and $CLARADIR.
 rm $INDIR/*.hipo  2> /dev/null
 rm $OUTDIR/*.hipo 2> /dev/null
-# find "$CLARADIR/" -type f -name "[^.]*" -delete
 
 # Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
 # TODO. Add banks needed by CVT.
 TMPFILE="$INDIR/tmp.hipo"
 hipo-utils -filter -b "RUN::config,DC::tdc" -n $NEVENTS -o $TMPFILE $INPUTFILE
 
-# Get CLAS12 recon version filename.
-IFS='/' read -ra ADDR <<< "$CLAS12VER"
-for i in "${ADDR[@]}"; do RECONNAME=$i; done # Dirty but it gets the job done.
-
 # Copy input file and install clara.
 for ((JOB=0;JOB<$NJOBS;++JOB)); do
     for CLAS12VER in "${CLAS12VERS[@]}"; do
+        # Get CLAS12 recon version filename.
+        IFS='/' read -ra ADDR <<< "$CLAS12VER"
+        for i in "${ADDR[@]}"; do RECONNAME=$i; done # Dirty but gets the job done.
+
         # --+ recon-util +--------------------------------------------------------------------------
         RUNNAME="$RECONNAME.recon-util-$JOB"
-        # Copy input file.
-        cp "$TMPFILE" "$INDIR/$RUNNAME.hipo"
+        cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
 
         # --+ clara +-------------------------------------------------------------------------------
-        RUNNAME="$RECONNAME.clara-$JOB.hipo"
-        # Copy input file.
-        cp "$TMPFILE" "$INDIR/$RUNNAME"
+        RUNNAME="$RECONNAME.clara-$JOB"
+        cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
 
-        # TODO. INSTALL CLARA FROM $CLAS12VER.
-        cd "$CLARADIR"
-        tar -czf "coatjava.tar.gz" "$CLAR12VER/coatjava"
-        export CLARA_HOME="$CLARADIR/$RUNNAME"
-        ./install-claracre-clas.sh -l "$RUNNAME" -f 5.0.2 -g 2.12 -j 11
-        rm "coatjava.tar.gz"
-        cd - > /dev/null
+        # Install clara from $CLAS12VER.
+        # cd "$CLARADIR"
+        # tar -C "$CLAS12VER" -czf "$CLARADIR/coatjava-$RUNNAME.tar.gz" "coatjava"
+        # export CLARA_HOME="$CLARADIR/$RUNNAME"
+        # ./install-claracre-clas.sh "$RUNNAME"
+        # rm "coatjava.tar.gz"
+        # cd - > /dev/null
     done
 done
 rm $TMPFILE
