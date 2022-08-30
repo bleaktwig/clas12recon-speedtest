@@ -1,13 +1,16 @@
 #!/bin/bash
 
-# --+ SETUP +---------------------------------------------------------------------------------------
-PLUGIN=$1
-FV=5.0.2
-GRAPES=2.12
-JRE=11
+# Setup.
+CLAS12_V=$1
+CLARA_V=5.0.2
+GRAPES_V=2.12
+JAVA_V=11
 
-# --+ INSTALL CLARA +-------------------------------------------------------------------------------
-tar xzf clara-cre-$FV.tar.gz
+# Install clara.
+if [ ! -f clara-cre-$CLARA_V.tar.gz ]; then
+    wget https://userweb.jlab.org/~gurjyan/clara-cre/clara-cre-$CLARA_V.tar.gz
+fi
+tar xzf clara-cre-$CLARA_V.tar.gz
 (
     mkdir clara-cre/jre
     cd clara-cre/jre
@@ -16,20 +19,32 @@ tar xzf clara-cre-$FV.tar.gz
         'Linux')
             MACHINE_TYPE=$(uname -m)
             if [ "$MACHINE_TYPE" == "x86_64" ]; then
-                cp ../../linux-64-$JRE.tar.gz .
-                tar xzf ./linux-64-$JRE.tar.gz
-                rm linux-64-$JRE.tar.gz
+                if [ ! -f ../../linux-64-$JAVA_V.tar.gz ]; then
+                    wget https://userweb.jlab.org/~gurjyan/clara-cre/linux-64-$JAVA_V.tar.gz
+                    mv linux-64-11.tar.gz ../..
+                fi
+                cp ../../linux-64-$JAVA_V.tar.gz .
+                tar xzf ./linux-64-$JAVA_V.tar.gz
+                rm linux-64-$JAVA_V.tar.gz
             else
-                cp ../../linux-i586-$JRE.tar.gz .
-                tar xzf ./linux-i586-$JRE.tar.gz
-                rm linux-i586.tar-$JRE.gz
+                if [ ! -f ../../linux-i586-$JAVA_V.tar.gz ]; then
+                    wget https://userweb.jlab.org/~gurjyan/clara-cre/linux-i586-$JAVA_V.tar.gz
+                    mv linux-i586-$JAVA_V.tar.gz ../..
+                fi
+                cp ../../linux-i586-$JAVA_V.tar.gz .
+                tar xzf ./linux-i586-$JAVA_V.tar.gz
+                rm linux-i586.tar-$JAVA_V.gz
             fi
         ;;
 
         'Darwin')
-            cp ../../macosx-64-$JRE.tar.gz .
-            tar xzf ./macosx-64-$JRE.tar.gz
-            rm macosx-64-$JRE.tar.gz
+            if [ ! -f ../../macosx-64-$JAVA_V.tar.gz ]; then
+                wget https://userweb.jlab.org/~gurjyan/clara-cre/macosx-64-$JAVA_V.tar.gz
+                mv macosx-64-$JAVA_V.tar.gz ../..
+            fi
+            cp ../../macosx-64-$JAVA_V.tar.gz .
+            tar xzf ./macosx-64-$JAVA_V.tar.gz
+            rm macosx-64-$JAVA_V.tar.gz
         ;;
 
         *) ;;
@@ -37,8 +52,8 @@ tar xzf clara-cre-$FV.tar.gz
 )
 mv clara-cre "$CLARA_HOME"
 
-# --+ INSTALL COATJAVA +----------------------------------------------------------------------------
-tar xzf coatjava-$PLUGIN.tar.gz
+# Install coatjava.
+tar xzf coatjava-$CLAS12_V.tar.gz
 (
     mkdir -p $CLARA_HOME/plugins/clas12/lib/clas
     mkdir -p $CLARA_HOME/plugins/clas12/lib/services
@@ -53,10 +68,13 @@ tar xzf coatjava-$PLUGIN.tar.gz
 )
 rm -rf coatjava
 
-# --+ INSTALL GRAPES +------------------------------------------------------------------------------
-tar xzf grapes-$GRAPES.tar.gz
+# Install grapes.
+if [ ! -f grapes-$GRAPES_V.tar.gz ]; then
+    wget https://clasweb.jlab.org/clas12offline/distribution/grapes/grapes-$GRAPES_V.tar.gz
+fi
+tar xzf grapes-$GRAPES_V.tar.gz
 (
-    mv grapes-$GRAPES "$CLARA_HOME"/plugins/grapes
+    mv grapes-$GRAPES_V "$CLARA_HOME"/plugins/grapes
     cp -rp "$CLARA_HOME"/plugins/grapes/bin/clara-grapes "$CLARA_HOME"/bin/.
     rm -f "$CLARA_HOME"/plugins/clas12/bin/clara-rec
     rm -f "$CLARA_HOME"/plugins/clas12/README
@@ -64,5 +82,6 @@ tar xzf grapes-$GRAPES.tar.gz
     rm -rf "$CLARA_HOME"/plugins/clas12/etc/services
 )
 
+# Finish up.
 chmod a+x "$CLARA_HOME"/bin/*
 chmod -R a+rx $CLARA_HOME

@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# TODO. RUN THESE WHEN YOU HAVE A DECENT INTERNET CONNECTION.
-# wget https://userweb.jlab.org/~gurjyan/clara-cre/linux-i586-11.tar.gz
-# wget https://userweb.jlab.org/~gurjyan/clara-cre/macosx-64-11.tar.gz
-
 usage() {
     echo ""
     echo "usage: $0 [-hse] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
