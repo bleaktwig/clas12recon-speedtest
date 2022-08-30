@@ -51,18 +51,6 @@ if [ ! -n "$1" ];        then echo "missing CLAS12 software versions.";        u
 # Capture positional arguments.
 CLAS12VERS=( "$@" ) # Get CLAS12 software versions from positional args.
 
-# --+ NOTE. Temporary code. +-----------------------------------------------------------------------
-echo "  * NEVENTS    = $NEVENTS"
-echo "  * NJOBS      = $NJOBS"
-echo "  * YAML       = $YAML"
-echo "  * INPUTFILE  = $INPUTFILE"
-echo "  * JAVA_OPTS  = $JAVA_OPTS"
-echo "  * CLAS12VERS = {"
-for i in "${CLAS12VERS[@]}"; do echo "        $i"; done
-echo "    }"
-echo ""
-# --------------------------------------------------------------------------------------------------
-
 # --+ SETUP +---------------------------------------------------------------------------------------
 INDIR="$PWD/in"
 OUTDIR="$PWD/out"
@@ -77,11 +65,13 @@ rm $OUTDIR/*.hipo   2> /dev/null
 rm -rf $CLARADIR/*/ 2> /dev/null
 
 # Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
+echo "Copying input file to $INDIR."
 # TODO. Add banks needed by CVT.
 TMPFILE="$INDIR/tmp.hipo"
-hipo-utils -filter -b "RUN::config,DC::tdc" -n $NEVENTS -o $TMPFILE $INPUTFILE
+hipo-utils -filter -b "RUN::config,DC::tdc" -n $NEVENTS -o $TMPFILE $INPUTFILE > /dev/null
 
 # Copy input file and install clara.
+echo "Setting up running environment (this can take a while)."
 for ((JOB=0;JOB<$NJOBS;++JOB)); do
     for CLAS12VER in "${CLAS12VERS[@]}"; do
         # Get CLAS12 recon version filename.
@@ -98,6 +88,7 @@ for ((JOB=0;JOB<$NJOBS;++JOB)); do
         echo "$RUNNAME.hipo" > "$INDIR/$RUNNAME.txt"
 
         # Install clara from $CLAS12VER.
+        echo "  * Installing clara for $RUNNAME."
         cd "$CLARADIR"
         tar -C "$CLAS12VER" -czf "$CLARADIR/coatjava-$RUNNAME.tar.gz" "coatjava"
         export CLARA_HOME="$CLARADIR/$RUNNAME"
