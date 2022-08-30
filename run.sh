@@ -72,6 +72,7 @@ LOGDIR="$PWD/log"
 
 # Clear out $INDIR, $OUTDIR, and $CLARADIR.
 rm $INDIR/*.hipo  2> /dev/null
+rm $INDIR/*.txt   2> /dev/null
 rm $OUTDIR/*.hipo 2> /dev/null
 
 # Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
@@ -93,6 +94,7 @@ for ((JOB=0;JOB<$NJOBS;++JOB)); do
         # --+ clara +-------------------------------------------------------------------------------
         RUNNAME="$RECONNAME.clara-$JOB"
         cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
+        echo "$RUNNAME.hipo" > "$INDIR/$RUNNAME.txt"
 
         # Install clara from $CLAS12VER.
         # cd "$CLARADIR"
