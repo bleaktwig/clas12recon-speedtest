@@ -10,15 +10,16 @@ usage() {
     echo "    -j <njobs>     Number of parallel jobs per version. Default is 1."
     echo "    -y <yaml>      Yaml file used for the test. Default is dc.yaml."
     echo "    -i <inputfile> Location of input file to use. Default is [...]."
-    echo "    <cn>           Location of (one or more) CLAS12 offline software versions to use."
+    echo "    c1 [c2 ...]    Location of (one or more) CLAS12 offline software versions to use."
     echo ""
     echo "    NOTE. The total number of jobs created will be 2*n*njobs, where n is the number of"
-    echo "          versions specified as positional arguments. For a fair test, this number"
-    echo "          shouldn't surpass number of available physical cores!"
+    echo "          positional arguments. For a fair test, this shouldn't surpass the number of"
+    echo "          available physical cores!"
     echo ""
     exit 1
 }
 
+# --+ HANDLE ARGS +---------------------------------------------------------------------------------
 # Get args.
 while getopts "hsen:j:y:i:" opt; do
     case "${opt}" in
@@ -38,7 +39,7 @@ shift $((OPTIND -1))
 if [ ! -n "$NEVENTS" ];   then NEVENTS=10000;        fi
 if [ ! -n "$NJOBS" ];     then NJOBS=1;              fi
 if [ ! -n "$YAML" ];      then YAML="yaml/all.yaml"; fi
-if [ ! -n "$INPUTFILE" ]; then INPUTFILE="...";      fi
+if [ ! -n "$INPUTFILE" ]; then INPUTFILE="...";      fi # TODO. Add a file from /work or smth.
 
 # Check args.
 if [ "$NEVENTS" -le 0 ]; then echo "Number of events can't be 0 or negative!"; usage; fi
@@ -50,7 +51,7 @@ if [ ! -n "$1" ];        then echo "missing CLAS12 versions.";                 u
 # Capture positional arguments.
 CLAS12VERS=( "$@" ) # Get CLAS12 software versions from positional args.
 
-# NOTE. Temporary code.
+# --+ NOTE. Temporary code. +-----------------------------------------------------------------------
 echo "  * NEVENTS    = $NEVENTS"
 echo "  * NJOBS      = $NJOBS"
 echo "  * YAML       = $YAML"
@@ -60,44 +61,75 @@ echo "  * CLAS12VERS = {"
 for i in "${CLAS12VERS[@]}"; do echo "        $i"; done
 echo "    }"
 echo ""
+# --------------------------------------------------------------------------------------------------
 
+# --+ SETUP +---------------------------------------------------------------------------------------
 INDIR="$PWD/in"
 OUTDIR="$PWD/out"
+CLARADIR="$PWD/clara"
 JUNKDIR="$PWD/junk"
 LOGDIR="$PWD/log"
 
-# TODO. Copy and reduce file to NEVENTS before running to speed copying up and reduce disk usage.
+# Clear out $INDIR, $OUTDIR, and $CLARADIR.
+rm $INDIR/*.hipo  2> /dev/null
+rm $OUTDIR/*.hipo 2> /dev/null
+# find "$CLARADIR/" -type f -name "[^.]*" -delete
 
-# TODO. FINISHING SETTING UP RUN CONDITIONS.
-for CLAS12VER in "${CLAS12VERS[@]}"; do
-    # --+ recon-util +----------------------------------
-    export MALLOC_ARENA_MAX=1
-    RECON="$CLAS12VER/coatjava/bin/"
+# Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
+# TODO. Add banks needed by CVT.
+TMPFILE="$INDIR/tmp.hipo"
+hipo-utils -filter -b "RUN::config,DC::tdc" -n $NEVENTS -o $TMPFILE $INPUTFILE
 
-    IFS='/' read -ra ADDR <<< "$CLAS12VER"
-    for i in "${ADDR[@]}"; do FILENAME=$i; done # Dirty but it gets the job done.
-    for ((JOB=0;JOB<$NJOBS;++JOB)); do
-        IN="$FILENAME.recon-util-$JOB.hipo"
-        cp "$INPUTFILE" "$INDIR/$IN"
-        echo "recon-util: $IN"
-        # TODO. RUN!
+# Get CLAS12 recon version filename.
+IFS='/' read -ra ADDR <<< "$CLAS12VER"
+for i in "${ADDR[@]}"; do RECONNAME=$i; done # Dirty but it gets the job done.
+
+# Copy input file and install clara.
+for ((JOB=0;JOB<$NJOBS;++JOB)); do
+    for CLAS12VER in "${CLAS12VERS[@]}"; do
+        # --+ recon-util +--------------------------------------------------------------------------
+        RUNNAME="$RECONNAME.recon-util-$JOB"
+        # Copy input file.
+        cp "$TMPFILE" "$INDIR/$RUNNAME.hipo"
+
+        # --+ clara +-------------------------------------------------------------------------------
+        RUNNAME="$RECONNAME.clara-$JOB.hipo"
+        # Copy input file.
+        cp "$TMPFILE" "$INDIR/$RUNNAME"
+
+        # TODO. INSTALL CLARA FROM $CLAS12VER.
+        cd "$CLARADIR"
+        tar -czf "coatjava.tar.gz" "$CLAR12VER/coatjava"
+        export CLARA_HOME="$CLARADIR/$RUNNAME"
+        ./install-claracre-clas.sh -l "$RUNNAME" -f 5.0.2 -g 2.12 -j 11
+        rm "coatjava.tar.gz"
+        cd - > /dev/null
     done
+done
+rm $TMPFILE
 
-    # --+ clara +-------------------------------------------
-    # ulimit -u 49152
-    unset CLARA_MONITOR_FE
-    export CLARA_USER_DATA="$JUNKDIR"
+# --+ RUN +-----------------------------------------------------------------------------------------
+for ((JOB=0;JOB<$NJOBS;++JOB)); do
+    for CLAS12VER in "${CLAS12VERS[@]}"; do
+        # --+ recon-util +--------------------------------------------------------------------------
+        RUNNAME="$RECONNAME.recon-util-$JOB"
+        export MALLOC_ARENA_MAX=1
+        RECON="$CLAS12VER/coatjava/bin/"
 
-    # TODO. INSTALL CLARA FROM $CLAS12VER.
-    for ((JOB=0;JOB<$NJOBS;++JOB)); do
-        IN="$FILENAME.clara-$JOB.hipo"
-        cp "$INPUTFILE" "$INDIR/$IN"
-        echo "clara:      $IN"
-        # TODO. RUN!
+        # TODO. Run.
+
+        # --+ clara +-------------------------------------------------------------------------------
+        RUNNAME="$RECONNAME.clara-$JOB.hipo"
+        # ulimit -u 49152
+        unset CLARA_MONITOR_FE
+        export CLARA_USER_DATA="$JUNKDIR"
+
+        # TODO. Run.
+
     done
 done
 
-# TODO. Write output to well-formatted file.
+# TODO. Write output to well-formatted file?
 
 # CLARA13="/work/clas12/users/benkel/dc-optimization/clara-versions/upstream"
 # CLARA17="/work/clas12/users/benkel/dc-optimization/clara-versions/fork"
