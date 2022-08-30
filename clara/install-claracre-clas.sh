@@ -1,18 +1,13 @@
 #!/bin/bash
 
-# TODO. RUN THESE WHEN YOU HAVE A DECENT INTERNET CONNECTION.
-# wget https://userweb.jlab.org/~gurjyan/clara-cre/linux-64-11.tar.gz
-# wget https://userweb.jlab.org/~gurjyan/clara-cre/linux-i586-11.tar.gz
-# wget https://userweb.jlab.org/~gurjyan/clara-cre/macosx-64-11.tar.gz
-
 # --+ SETUP +---------------------------------------------------------------------------------------
 PLUGIN=$1
 FV=5.0.2
-GRAPES=2.1
+GRAPES=2.12
 JRE=11
 
 # --+ INSTALL CLARA +-------------------------------------------------------------------------------
-tar xvzf clara-cre-$FV.tar.gz
+tar xzf clara-cre-$FV.tar.gz
 (
     mkdir clara-cre/jre
     cd clara-cre/jre
@@ -22,18 +17,18 @@ tar xvzf clara-cre-$FV.tar.gz
             MACHINE_TYPE=$(uname -m)
             if [ "$MACHINE_TYPE" == "x86_64" ]; then
                 cp ../../linux-64-$JRE.tar.gz .
-                tar xvzf ./linux-64-$JRE.tar.gz
+                tar xzf ./linux-64-$JRE.tar.gz
                 rm linux-64-$JRE.tar.gz
             else
                 cp ../../linux-i586-$JRE.tar.gz .
-                tar xvzf ./linux-i586-$JRE.tar.gz
+                tar xzf ./linux-i586-$JRE.tar.gz
                 rm linux-i586.tar-$JRE.gz
             fi
         ;;
 
         'Darwin')
             cp ../../macosx-64-$JRE.tar.gz .
-            tar xvzf ./macosx-64-$JRE.tar.gz
+            tar xzf ./macosx-64-$JRE.tar.gz
             rm macosx-64-$JRE.tar.gz
         ;;
 
@@ -43,7 +38,7 @@ tar xvzf clara-cre-$FV.tar.gz
 mv clara-cre "$CLARA_HOME"
 
 # --+ INSTALL COATJAVA +----------------------------------------------------------------------------
-tar xvzf coatjava-$PLUGIN.tar.gz
+tar xzf coatjava-$PLUGIN.tar.gz
 (
     mkdir -p $CLARA_HOME/plugins/clas12/lib/clas
     mkdir -p $CLARA_HOME/plugins/clas12/lib/services
@@ -59,7 +54,7 @@ tar xvzf coatjava-$PLUGIN.tar.gz
 rm -rf coatjava
 
 # --+ INSTALL GRAPES +------------------------------------------------------------------------------
-tar xvzf grapes-$GRAPES.tar.gz
+tar xzf grapes-$GRAPES.tar.gz
 (
     mv grapes-$GRAPES "$CLARA_HOME"/plugins/grapes
     cp -rp "$CLARA_HOME"/plugins/grapes/bin/clara-grapes "$CLARA_HOME"/bin/.
