@@ -114,30 +114,40 @@ done
 rm $TMPFILE
 
 # --+ RUN +-----------------------------------------------------------------------------------------
-# for ((JOB=0;JOB<$NJOBS;++JOB)); do
-#     for CLAS12VER in "${CLAS12VERS[@]}"; do
-#         # --+ recon-util +--------------------------------------------------------------------------
-#         RUNNAME="$RECONNAME.recon-util-$JOB"
-#         export MALLOC_ARENA_MAX=1
-#         RECON="$CLAS12VER/coatjava/bin/recon-util"
-#
-#         # Run.
-#         $RECON -i "$INDIR/$RUNNAME.hipo" -o "$OUTDIR/$RUNNAME.hipo" -y $YAML -n $NEVENTS > "$LOGDIR/$RUNNAME.txt" &
-#
-#
-#         # --+ clara +-------------------------------------------------------------------------------
-#         RUNNAME="$RECONNAME.clara-$JOB"
-#         # ulimit -u 49152
-#         unset CLARA_MONITOR_FE
-#         export CLARA_USER_DATA="$JUNKDIR"
-#         export CLARA_HOME="$CLARADIR/$RUNNAME"
-#         export CLAS12DIR="$CLARA_HOME/plugins/clas12"
-#         export JAVA_OPTS="$JAVA_OPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
-#
-#         # Run.
-#         CLARA_HOME/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s $RUNNAME $YAML "$INDIR/$RUNNAME.txt" > "$LOGDIR/$RUNNAME.txt" &
-#         sleep 5
-#     done
-# done
+for ((JOB=0;JOB<$NJOBS;++JOB)); do
+    for CLAS12VER in "${CLAS12VERS[@]}"; do
+        # Get CLAS12 recon version filename.
+        IFS='/' read -ra ADDR <<< "$CLAS12VER"
+        for i in "${ADDR[@]}"; do RECONNAME=$i; done # Dirty but gets the job done.
+        # --+ recon-util +--------------------------------------------------------------------------
+        if [ $ONLYCLARA = false ]; then
+            RUNNAME="$RECONNAME.reconutil-$JOB"
+
+            export LOGDIR=$LOGDIR
+            export RUNNAME=$RUNNAME
+            export CLAS12VER="$CLAS12VER"
+            export JAVA_OPTS="$TESTOPTS -Xmx1536m -Xms1024m"
+
+            # Run.
+            ./call-recon-util.sh \
+                    -i "$INDIR/$RUNNAME.hipo" -o "$OUTDIR/$RUNNAME.hipo" -y $YAML -n $NEVENTS
+        fi
+
+        # --+ clara +-------------------------------------------------------------------------------
+        if [ $ONLYRECONUTIL = false ]; then
+            RUNNAME="$RECONNAME.clara-$JOB"
+            # ulimit -u 49152
+            unset CLARA_MONITOR_FE
+            export CLARA_USER_DATA="$JUNKDIR"
+            export CLARA_HOME="$CLARADIR/$RUNNAME"
+            export CLAS12DIR="$CLARA_HOME/plugins/clas12"
+            export JAVA_OPTS="$TESTOPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
+
+            # Run.
+            ./$CLARA_HOME/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s $RUNNAME $YAML "$INDIR/$RUNNAME.txt" > "$LOGDIR/$RUNNAME.txt" &
+            sleep 5
+        fi
+    done
+done
 
 # TODO. Write output to well-formatted file?
