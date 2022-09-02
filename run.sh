@@ -2,15 +2,17 @@
 
 usage() {
     echo ""
-    echo "usage: $0 [-hse] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
+    echo "usage: $0 [-hserc] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
     echo "    -h             Display this usage message."
     echo "    -s             Use JVM serial garbage collector."
-    echo "    -e             Use experimental options (-XX:+UseJVMCICompiler)"
+    echo "    -e             Use experimental options (-XX:+UseJVMCICompiler)."
+    echo "    -r             Run only recon-util."
+    echo "    -c             Run only clara."
     echo "    -n <nevents>   Number of events per job. Default is 10.000."
     echo "    -j <njobs>     Number of parallel jobs per version. Default is 1."
-    echo "    -y <yaml>      Yaml file used for the test. Default is dc.yaml."
-    echo "    -i <inputfile> Location of input file to use. Default is [...]."
-    echo "    c1 [c2 ...]    Location of (one or more) CLAS12 offline software versions to use."
+    echo "    -y <yaml>      Absolute path to yaml file used for the test. Default is dc.yaml."
+    echo "    -i <inputfile> Absolute path to input file to use. Default is [TODO]."
+    echo "    c1 [c2 ...]    Absolute path to (one or more) CLAS12 offline software versions to use."
     echo ""
     echo "    NOTE. The total number of jobs created will be 2*n*njobs, where n is the number of"
     echo "          positional arguments. For a fair test, this shouldn't surpass the number of"
@@ -21,12 +23,14 @@ usage() {
 
 # --+ HANDLE ARGS +---------------------------------------------------------------------------------
 # Get args.
-while getopts "hsen:j:y:i:" opt; do
+while getopts "hsercn:j:y:i:" opt; do
     case "${opt}" in
         \? ) usage;;
         h  ) usage;;
-        s  ) JAVA_OPTS=$JAVA_OPTS' -XX:+UseSerialGC';;
-        e  ) JAVA_OPTS=$JAVA_OPTS' -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler';;
+        s  ) TESTOPTS=$TESTOPTS' -XX:+UseSerialGC';;
+        e  ) TESTOPTS=$TESTOPTS' -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler';;
+        r  ) ONLYRECONUTIL=true;;
+        c  ) ONLYCLARA=true;;
         n  ) NEVENTS=${OPTARG};;
         j  ) NJOBS=${OPTARG};;
         y  ) YAML=${OPTARG};;
@@ -36,12 +40,18 @@ done
 shift $((OPTIND -1))
 
 # Give optargs a default value if none is given.
-if [ ! -n "$NEVENTS" ];   then NEVENTS=10000;        fi
-if [ ! -n "$NJOBS" ];     then NJOBS=1;              fi
-if [ ! -n "$YAML" ];      then YAML="yaml/all.yaml"; fi
-if [ ! -n "$INPUTFILE" ]; then INPUTFILE="...";      fi # TODO. Add a file from /work or smth.
+if [ ! -n "$ONLYRECONUTIL" ]; then ONLYRECONUTIL=false;       fi
+if [ ! -n "$ONLYCLARA" ];     then ONLYCLARA=false;           fi
+if [ ! -n "$NEVENTS" ];       then NEVENTS=10000;             fi
+if [ ! -n "$NJOBS" ];         then NJOBS=1;                   fi
+if [ ! -n "$YAML" ];          then YAML="$PWD/yaml/all.yaml"; fi
+if [ ! -n "$INPUTFILE" ];     then INPUTFILE="...";           fi # TODO. Add a file from /work or smth.
 
 # Check args.
+if [ "$ONLYRECONUTIL" = true ] && [ "$ONLYCLARA" = true ]; then
+    echo "-r and -c are not compatible!"
+    usage
+fi
 if [ "$NEVENTS" -le 0 ]; then echo "Number of events can't be 0 or negative!"; usage; fi
 if [ "$NJOBS"   -le 0 ]; then echo "Number of jobs can't be 0 or negative!";   usage; fi
 if [ ! -f "$YAML" ];     then echo "File $YAML not found!";                    usage; fi
@@ -79,22 +89,26 @@ for ((JOB=0;JOB<$NJOBS;++JOB)); do
         for i in "${ADDR[@]}"; do RECONNAME=$i; done # Dirty but gets the job done.
 
         # --+ recon-util +--------------------------------------------------------------------------
-        RUNNAME="$RECONNAME.recon-util-$JOB"
-        cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
+        if [ $ONLYCLARA = false ]; then
+            RUNNAME="$RECONNAME.reconutil-$JOB"
+            cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
+        fi
 
         # --+ clara +-------------------------------------------------------------------------------
-        RUNNAME="$RECONNAME.clara-$JOB"
-        cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
-        echo "$RUNNAME.hipo" > "$INDIR/$RUNNAME.txt"
+        if [ $ONLYRECONUTIL = false ]; then
+            RUNNAME="$RECONNAME.clara-$JOB"
+            cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
+            echo "$RUNNAME.hipo" > "$INDIR/$RUNNAME.txt"
 
-        # Install clara from $CLAS12VER.
-        echo "  * Installing clara for $RUNNAME."
-        cd "$CLARADIR"
-        tar -C "$CLAS12VER" -czf "$CLARADIR/coatjava-$RUNNAME.tar.gz" "coatjava"
-        export CLARA_HOME="$CLARADIR/$RUNNAME"
-        ./install-claracre-clas.sh "$RUNNAME"
-        rm "coatjava-$RUNNAME.tar.gz"
-        cd - > /dev/null
+            # Install clara from $CLAS12VER.
+            echo "  * Installing clara for $RUNNAME."
+            cd "$CLARADIR"
+            tar -C "$CLAS12VER" -czf "$CLARADIR/coatjava-$RUNNAME.tar.gz" "coatjava"
+            export CLARA_HOME="$CLARADIR/$RUNNAME"
+            ./install-claracre-clas.sh "$RUNNAME"
+            rm "coatjava-$RUNNAME.tar.gz"
+            cd - > /dev/null
+        fi
     done
 done
 rm $TMPFILE
