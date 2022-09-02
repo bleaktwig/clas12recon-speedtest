@@ -4,15 +4,16 @@ usage() {
     echo ""
     echo "usage: $0 [-hserc] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
     echo "    -h             Display this usage message."
-    echo "    -s             Use JVM serial garbage collector."
+    echo "    -s             Use JVM serial garbage collector (-XX:+UseSerialGC)."
     echo "    -e             Use experimental options (-XX:+UseJVMCICompiler)."
     echo "    -r             Run only recon-util."
     echo "    -c             Run only clara."
     echo "    -n <nevents>   Number of events per job. Default is 10.000."
     echo "    -j <njobs>     Number of parallel jobs per version. Default is 1."
-    echo "    -y <yaml>      Absolute path to yaml file used for the test. Default is dc.yaml."
+    echo "    -y <yaml>      Absolute path to yaml file used for the test. Default is "
+    echo "                       $PWD/yaml/dc.yaml."
     echo "    -i <inputfile> Absolute path to input file to use. Default is [TODO]."
-    echo "    c1 [c2 ...]    Absolute path to (one or more) CLAS12 offline software versions to use."
+    echo "    c1 [c2 ...]    Absolute path to (one or more) CLAS12 offline software versions to test."
     echo ""
     echo "    NOTE. The total number of jobs created will be 2*n*njobs, where n is the number of"
     echo "          positional arguments. For a fair test, this shouldn't surpass the number of"
@@ -68,10 +69,11 @@ CLARADIR="$PWD/clara"
 JUNKDIR="$PWD/junk"
 LOGDIR="$PWD/log"
 
-# Clear out $INDIR, $OUTDIR, and $CLARADIR.
+# Clear out $INDIR, $OUTDIR, $LOGDIR, and $CLARADIR.
 rm $INDIR/*.hipo    2> /dev/null
 rm $INDIR/*.txt     2> /dev/null
 rm $OUTDIR/*.hipo   2> /dev/null
+rm $LOGDIR/*.txt    2> /dev/null
 rm -rf $CLARADIR/*/ 2> /dev/null
 
 # Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
