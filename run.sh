@@ -140,15 +140,16 @@ for ((JOB=0;JOB<$NJOBS;++JOB)); do
         if [ $ONLYRECONUTIL = false ]; then
             RUNNAME="$RECONNAME.clara-$JOB"
             # ulimit -u 49152
-            unset CLARA_MONITOR_FE
-            export CLARA_USER_DATA="$JUNKDIR"
             export CLARA_HOME="$CLARADIR/$RUNNAME"
+            export CLARA_USER_DATA="$JUNKDIR"
             export CLAS12DIR="$CLARA_HOME/plugins/clas12"
+            unset CLARA_MONITOR_FE
+            export PATH=${PATH}:$CLAS12DIR/bin
             export JAVA_OPTS="$TESTOPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
 
             # Run.
             bash $CLARA_HOME/lib/clara/run-clara \
-                    -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s $RUNNAME \
+                    -i $INDIR -o $OUTDIR -z "out_" -x $JUNKDIR -t 1 -e $NEVENTS -s $RUNNAME \
                     $YAML "$INDIR/$RUNNAME.txt" > "$LOGDIR/$RUNNAME.txt" &
             sleep 5
         fi
