@@ -77,6 +77,7 @@ rm $LOGDIR/*.txt    2> /dev/null
 rm -rf $CLARADIR/*/ 2> /dev/null
 
 # Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
+echo ""
 echo "Copying input file to $INDIR."
 # TODO. Add banks needed by CVT.
 TMPFILE="$INDIR/tmp.hipo"
@@ -146,7 +147,9 @@ for ((JOB=0;JOB<$NJOBS;++JOB)); do
             export JAVA_OPTS="$TESTOPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
 
             # Run.
-            ./$CLARA_HOME/lib/clara/run-clara -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s $RUNNAME $YAML "$INDIR/$RUNNAME.txt" > "$LOGDIR/$RUNNAME.txt" &
+            bash $CLARA_HOME/lib/clara/run-clara \
+                    -i $INDIR -o $OUTDIR -z "out_" -x . -t 1 -e $NEVENTS -s $RUNNAME \
+                    $YAML "$INDIR/$RUNNAME.txt" > "$LOGDIR/$RUNNAME.txt" &
             sleep 5
         fi
     done
