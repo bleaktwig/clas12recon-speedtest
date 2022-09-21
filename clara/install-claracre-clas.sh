@@ -3,7 +3,8 @@
 # Setup.
 CLAS12_V=$1
 CLARA_V=5.0.2
-GRAPES_V=2.12
+# GRAPES_V=2.12
+GRAPES_V=2.1
 JAVA_V=11
 
 # Install clara.
