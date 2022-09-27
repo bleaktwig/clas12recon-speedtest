@@ -173,7 +173,7 @@ if [ $ONLYINSTALL = false ]; then
                 JAVA_OPTS="$JAVA_OPTS -Djava.util.logging.config.file=$CLAS12DIR/etc/logging/debug.properties"
 
                 # Run.
-                bash $CLARA_HOME/lib/clara/run-clara \
+                $CLARA_HOME/lib/clara/run-clara \
                         -i $INDIR -o $OUTDIR -z "out_" -x $JUNKDIR -t 1 -e $NEVENTS -s $RUNNAME \
                         $YAML "$INDIR/$RUNNAME.txt" > "$LOGDIR/$RUNNAME.txt" &
                 sleep 5
