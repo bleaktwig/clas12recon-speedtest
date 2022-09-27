@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Setup.
-CLAS12_V=$1
+CLARA_HOME=$1
+CLAS12_V=$2
+JOB=$3
 CLARA_V=5.0.2
-# GRAPES_V=2.12
 GRAPES_V=2.1
 JAVA_V=11
 
@@ -11,10 +12,10 @@ JAVA_V=11
 if [ ! -f clara-cre-$CLARA_V.tar.gz ]; then
     wget https://userweb.jlab.org/~gurjyan/clara-cre/clara-cre-$CLARA_V.tar.gz
 fi
-tar xzf clara-cre-$CLARA_V.tar.gz
+mkdir $CLARA_HOME && tar xzf clara-cre-$CLARA_V.tar.gz -C $CLARA_HOME --strip-components 1
 (
-    mkdir clara-cre/jre
-    cd clara-cre/jre
+    mkdir $CLARA_HOME/jre
+    cd $CLARA_HOME/jre
     OS=$(uname)
     case $OS in
         'Linux')
@@ -51,31 +52,31 @@ tar xzf clara-cre-$CLARA_V.tar.gz
         *) ;;
     esac
 )
-mv clara-cre "$CLARA_HOME"
 
 # Install coatjava.
-tar xzf coatjava-$CLAS12_V.tar.gz
+mkdir "coatjava-$JOB" && tar xzf coatjava-$CLAS12_V.tar.gz -C "coatjava-$JOB" \
+        --strip-components 1
 (
     mkdir -p $CLARA_HOME/plugins/clas12/lib/clas
     mkdir -p $CLARA_HOME/plugins/clas12/lib/services
     mkdir -p $CLARA_HOME/plugins/clas12/config
 
-    cd coatjava
+    cd "coatjava-$JOB"
     cp -rp etc "$CLARA_HOME"/plugins/clas12/.
     cp -rp bin "$CLARA_HOME"/plugins/clas12/.
     cp -rp lib/utils "$CLARA_HOME"/plugins/clas12/lib/.
     cp -rp lib/clas/* "$CLARA_HOME"/plugins/clas12/lib/clas/.
     cp -rp lib/services/* "$CLARA_HOME"/plugins/clas12/lib/services/.
 )
-rm -rf coatjava
+rm -rf "coatjava-$JOB"
 
 # Install grapes.
 if [ ! -f grapes-$GRAPES_V.tar.gz ]; then
     wget https://clasweb.jlab.org/clas12offline/distribution/grapes/grapes-$GRAPES_V.tar.gz
 fi
-tar xzf grapes-$GRAPES_V.tar.gz
+mkdir "grapes-$JOB" && tar xzf grapes-$GRAPES_V.tar.gz -C "grapes-$JOB" --strip-components 1
 (
-    mv grapes-$GRAPES_V "$CLARA_HOME"/plugins/grapes
+    mv grapes-$JOB "$CLARA_HOME"/plugins/grapes
     cp -rp "$CLARA_HOME"/plugins/grapes/bin/clara-grapes "$CLARA_HOME"/bin/.
     rm -f "$CLARA_HOME"/plugins/clas12/bin/clara-rec
     rm -f "$CLARA_HOME"/plugins/clas12/README

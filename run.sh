@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Print usage.
 usage() {
     echo ""
     echo "usage: $0 [-hsercIR] [-n <nevents>] [-j <njobs>] [-y <yaml>] [-i <inputfile>] c1 [c2 ...]"
@@ -22,6 +23,37 @@ usage() {
     echo "          available physical cores!"
     echo ""
     exit 1
+}
+
+# "Install" recon-util (just make a copy of the input file).
+install_reconutil() {
+    # Give names to parameters to make this readable.
+    RECONNAME=$1
+    JOB=$2
+
+    # Run.
+    RUNNAME="$RECONNAME.reconutil-$JOB"
+    cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
+}
+
+# Copy input file and install clara.
+install_clara() {
+    # Give names to parameters to make this readable.
+    RECONNAME=$1
+    JOB=$2
+    CLAS12VER=$3
+
+    # Run.
+    RUNNAME="$RECONNAME.clara-$JOB"
+    cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
+    echo "$RUNNAME.hipo" > "$INDIR/$RUNNAME.txt"
+
+    # Install clara from $CLAS12VER.
+    cd "$CLARADIR"
+    tar -C "$CLAS12VER" -czf "$CLARADIR/coatjava-$RUNNAME.tar.gz" "coatjava"
+    CLARA_HOME="$CLARADIR/$RUNNAME"
+    ./install-claracre-clas.sh $CLARA_HOME $RUNNAME $JOB
+    rm "coatjava-$RUNNAME.tar.gz"
 }
 
 # --+ HANDLE ARGS +---------------------------------------------------------------------------------
@@ -73,22 +105,23 @@ if [ ! -n "$1" ];        then echo "missing CLAS12 software versions.";        u
 CLAS12VERS=( "$@" ) # Get CLAS12 software versions from positional args.
 
 # --+ SETUP +---------------------------------------------------------------------------------------
-INDIR="$PWD/in"
-OUTDIR="$PWD/out"
-CLARADIR="$PWD/clara"
-JUNKDIR="$PWD/junk"
-LOGDIR="$PWD/log"
+export INDIR="$PWD/in"
+export OUTDIR="$PWD/out"
+export CLARADIR="$PWD/clara"
+export JUNKDIR="$PWD/junk"
+export LOGDIR="$PWD/log"
 
+# --+ INSTALL +-------------------------------------------------------------------------------------
 if [ $ONLYRUN = false ]; then
     # Clear out $INDIR.
-    rm $INDIR/*.hipo    2> /dev/null
-    rm $INDIR/*.txt     2> /dev/null
+    rm $INDIR/*.hipo 2> /dev/null
+    rm $INDIR/*.txt  2> /dev/null
 
     # Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
     echo ""
     echo "Copying input file to $INDIR."
     # TODO. Add banks needed by CVT.
-    TMPFILE="$INDIR/tmp.hipo"
+    export TMPFILE="$INDIR/tmp.hipo"
     hipo-utils -filter -b "RUN::config,DC::tdc" -n $NEVENTS -o $TMPFILE $INPUTFILE > /dev/null
 
     # Clear out $CLARADIR.
@@ -101,30 +134,17 @@ if [ $ONLYRUN = false ]; then
             # Get CLAS12 recon version filename.
             IFS='/' read -ra ADDR <<< "$CLAS12VER"
             for i in "${ADDR[@]}"; do RECONNAME=$i; done # Dirty but gets the job done.
-
-            # --+ recon-util +--------------------------------------------------------------------------
             if [ $ONLYCLARA = false ]; then
-                RUNNAME="$RECONNAME.reconutil-$JOB"
-                cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
+                install_reconutil $RECONNAME $JOB &
             fi
-
-            # --+ clara +-------------------------------------------------------------------------------
             if [ $ONLYRECONUTIL = false ]; then
-                RUNNAME="$RECONNAME.clara-$JOB"
-                cp "$TMPFILE" "$INDIR/$RUNNAME.hipo" # Copy input file.
-                echo "$RUNNAME.hipo" > "$INDIR/$RUNNAME.txt"
-
-                # Install clara from $CLAS12VER.
-                echo "  * Installing clara for $RUNNAME."
-                cd "$CLARADIR"
-                tar -C "$CLAS12VER" -czf "$CLARADIR/coatjava-$RUNNAME.tar.gz" "coatjava"
-                export CLARA_HOME="$CLARADIR/$RUNNAME"
-                ./install-claracre-clas.sh "$RUNNAME"
-                rm "coatjava-$RUNNAME.tar.gz"
-                cd - > /dev/null
+                install_clara $RECONNAME $JOB $CLAS12VER &
             fi
         done
     done
+
+    # Wait for the installations to finish.
+    wait
     rm $TMPFILE
 fi
 
