@@ -143,7 +143,7 @@ if [ $ONLYRUN = false ]; then
         done
     done
 
-    # Wait for the installations to finish.
+    # Wait for all installations to finish.
     wait
     rm $TMPFILE
 fi
@@ -159,7 +159,8 @@ if [ $ONLYINSTALL = false ]; then
             # Get CLAS12 recon version filename.
             IFS='/' read -ra ADDR <<< "$CLAS12VER"
             for i in "${ADDR[@]}"; do RECONNAME=$i; done # Dirty but gets the job done.
-            # --+ recon-util +--------------------------------------------------------------------------
+
+            # --+ recon-util +----------------------------------------------------------------------
             if [ $ONLYCLARA = false ]; then
                 RUNNAME="$RECONNAME.reconutil-$JOB"
 
@@ -173,7 +174,7 @@ if [ $ONLYINSTALL = false ]; then
                         -i "$INDIR/$RUNNAME.hipo" -o "$OUTDIR/$RUNNAME.hipo" -y $YAML -n $NEVENTS
             fi
 
-            # --+ clara +-------------------------------------------------------------------------------
+            # --+ clara +---------------------------------------------------------------------------
             if [ $ONLYRECONUTIL = false ]; then
                 RUNNAME="$RECONNAME.clara-$JOB"
                 # ulimit -u 49152
@@ -200,6 +201,33 @@ if [ $ONLYINSTALL = false ]; then
             fi
         done
     done
-fi
 
-# TODO. Write output to well-formatted file?
+    # Wait for all runs to finish.
+    wait
+
+    # Print to stdout total runtime of each version.
+    for file in $LOGDIR/*; do
+        # Extract filename.
+        filename="$(basename $file .txt)"
+
+        # Separate logs reconstructed by recon-util from those reconstructed by clara.
+        tmp=${filename#*.}
+        recontype=${tmp%-*}
+        # TODO. Both for recon-util and for clara we assume that the number of characters in the
+        #       output time are constant. This is not a valid assumption!
+        if [ "$recontype" = "reconutil" ]; then
+            tmp=$(grep -F ">>>>>" $file | tail -c 13)
+            time=${tmp::-5}
+            echo "$filename : $time ms"
+        fi
+        if [ "$recontype" = "clara" ]; then
+            tmp=$(grep -F "TOTAL" $file | tail -c 10)
+            time=${tmp::-3}
+            echo "$filename : $time ms"
+        fi
+    done
+
+    # NOTE. Making arrays and printing out the average and standard deviation of each version would
+    #       be a sweet feature, but just getting the times works pretty well and I'm too lazy rn to
+    #       implement such a feature. Maybe in the future!
+fi
