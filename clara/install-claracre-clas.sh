@@ -54,29 +54,29 @@ mkdir $CLARA_HOME && tar xzf clara-cre-$CLARA_V.tar.gz -C $CLARA_HOME --strip-co
 )
 
 # Install coatjava.
-mkdir "coatjava-$JOB" && tar xzf coatjava-$CLAS12_V.tar.gz -C "coatjava-$JOB" \
+mkdir "coatjava-$CLAS12_V-$JOB" && tar xzf coatjava-$CLAS12_V.tar.gz -C "coatjava-$CLAS12_V-$JOB" \
         --strip-components 1
 (
     mkdir -p $CLARA_HOME/plugins/clas12/lib/clas
     mkdir -p $CLARA_HOME/plugins/clas12/lib/services
     mkdir -p $CLARA_HOME/plugins/clas12/config
 
-    cd "coatjava-$JOB"
+    cd "coatjava-$CLAS12_V-$JOB"
     cp -rp etc "$CLARA_HOME"/plugins/clas12/.
     cp -rp bin "$CLARA_HOME"/plugins/clas12/.
     cp -rp lib/utils "$CLARA_HOME"/plugins/clas12/lib/.
     cp -rp lib/clas/* "$CLARA_HOME"/plugins/clas12/lib/clas/.
     cp -rp lib/services/* "$CLARA_HOME"/plugins/clas12/lib/services/.
 )
-rm -rf "coatjava-$JOB"
+rm -rf "coatjava-$CLAS12_V-$JOB"
 
 # Install grapes.
 if [ ! -f grapes-$GRAPES_V.tar.gz ]; then
     wget https://clasweb.jlab.org/clas12offline/distribution/grapes/grapes-$GRAPES_V.tar.gz
 fi
-mkdir "grapes-$JOB" && tar xzf grapes-$GRAPES_V.tar.gz -C "grapes-$JOB" --strip-components 1
+mkdir "grapes-$CLAS12_V-$JOB" && tar xzf grapes-$GRAPES_V.tar.gz -C "grapes-$CLAS12_V-$JOB" --strip-components 1
 (
-    mv grapes-$JOB "$CLARA_HOME"/plugins/grapes
+    mv grapes-$CLAS12_V-$JOB "$CLARA_HOME"/plugins/grapes
     cp -rp "$CLARA_HOME"/plugins/grapes/bin/clara-grapes "$CLARA_HOME"/bin/.
     rm -f "$CLARA_HOME"/plugins/clas12/bin/clara-rec
     rm -f "$CLARA_HOME"/plugins/clas12/README
