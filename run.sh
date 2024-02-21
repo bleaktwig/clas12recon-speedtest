@@ -214,12 +214,14 @@ if [ $ONLYINSTALL = false ]; then
         # Separate logs reconstructed by recon-util from those reconstructed by clara.
         tmp=${filename#*.}
         recontype=${tmp%-*}
+
         # TODO. Both for recon-util and for clara we assume that the number of characters in the
         #       output time are constant. This is not a valid assumption!
         if [ "$recontype" = "reconutil" ]; then
-            tmp=$(grep -F ">>>>>" $file | tail -c 13)
-            time=${tmp::-5}
-            echo "$filename : $time ms"
+	    # NOTE. For some weird reason, the grep + tail fails here but not on my terminal. for the
+	    #       time being, we'll just have to read the log manually.
+            time=$(grep -F ">>>>>" $file | tail -c 13)
+            echo "$filename : $time"
         fi
         if [ "$recontype" = "clara" ]; then
             tmp=$(grep -F "TOTAL" $file | tail -c 10)
