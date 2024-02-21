@@ -203,6 +203,7 @@ if [ $ONLYINSTALL = false ]; then
     done
 
     # Wait for all runs to finish.
+    # TODO. This is not actually waiting for the runs to finish...
     wait
 
     # Print to stdout total runtime of each version.
@@ -217,8 +218,6 @@ if [ $ONLYINSTALL = false ]; then
         # TODO. Both for recon-util and for clara we assume that the number of characters in the
         #       output time are constant. This is not a valid assumption!
         if [ "$recontype" = "reconutil" ]; then
-	    # NOTE. For some weird reason, the grep + tail fails here but not on my terminal. for the
-	    #       time being, we'll just have to read the log manually.
             time=$(grep -F ">>>>>" $file | tail -c 13)
             echo "$filename : $time"
         fi
