@@ -121,8 +121,7 @@ if [ $ONLYRUN = false ]; then
     echo ""
     echo "Copying input file to $INDIR."
     export TMPFILE="$INDIR/tmp.hipo"
-    BANKS="RUN::config,AND::adc,BMT::adc,BST::adc,DC::tdc,HEL::adc,HEL::flip,HEL::online"
-    hipo-utils -filter -b $BANKS -n $NEVENTS -o $TMPFILE $INPUTFILE > /dev/null
+    hipo-utils -filter -n $NEVENTS -o $TMPFILE $INPUTFILE > /dev/null
 
     # Clear out $CLARADIR.
     rm -rf $CLARADIR/*/ 2> /dev/null
