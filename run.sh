@@ -120,10 +120,9 @@ if [ $ONLYRUN = false ]; then
     # Copy file to $INDIR and reduce to NEVENTS to minimize disk usage.
     echo ""
     echo "Copying input file to $INDIR."
-    # TODO. Add banks needed by CVT.
     export TMPFILE="$INDIR/tmp.hipo"
-    hipo-utils -filter -b "RUN::config,DC::tdc" -n $NEVENTS -o $TMPFILE $INPUTFILE > /dev/null
-    # \-> TODO. Make sure that this line is fine.
+    BANKS="RUN::config,AND::adc,BMT::adc,BST::adc,DC::tdc,HEL::adc,HEL::flip,HEL::online"
+    hipo-utils -filter -b $BANKS -n $NEVENTS -o $TMPFILE $INPUTFILE > /dev/null
 
     # Clear out $CLARADIR.
     rm -rf $CLARADIR/*/ 2> /dev/null
