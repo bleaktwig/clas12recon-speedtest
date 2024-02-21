@@ -84,7 +84,7 @@ if [ ! -n "$ONLYRUN" ];       then ONLYRUN=false;             fi
 if [ ! -n "$NEVENTS" ];       then NEVENTS=10000;             fi
 if [ ! -n "$NJOBS" ];         then NJOBS=1;                   fi
 if [ ! -n "$YAML" ];          then YAML="$PWD/yaml/all.yaml"; fi
-if [ ! -n "$INPUTFILE" ];     then INPUTFILE="...";           fi # TODO. Add a file from /work or smth.
+if [ ! -n "$INPUTFILE" ];     then INPUTFILE="INVALID";       fi # TODO. Add a file from /work or smth.
 
 # Check args.
 if [ "$ONLYRECONUTIL" = true ] && [ "$ONLYCLARA" = true ]; then
@@ -123,6 +123,7 @@ if [ $ONLYRUN = false ]; then
     # TODO. Add banks needed by CVT.
     export TMPFILE="$INDIR/tmp.hipo"
     hipo-utils -filter -b "RUN::config,DC::tdc" -n $NEVENTS -o $TMPFILE $INPUTFILE > /dev/null
+    # \-> TODO. Make sure that this line is fine.
 
     # Clear out $CLARADIR.
     rm -rf $CLARADIR/*/ 2> /dev/null
