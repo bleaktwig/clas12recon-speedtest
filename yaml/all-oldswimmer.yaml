@@ -18,6 +18,8 @@ services:
     name: FTTRK
   - class: org.jlab.rec.ft.FTEBEngine
     name: FTEB
+  - class: org.jlab.service.raster.RasterEngine
+    name: RASTER
 # DC clustering: nominal algoritm, filled the cluster bank for ai and conventional tracking
   - class: org.jlab.service.dc.DCHBClustering
     name: DCCR
@@ -45,6 +47,8 @@ services:
 # DC regular TB tracking
   - class: org.jlab.service.dc.DCTBEngine
     name: DCTB
+  - class: org.jlab.service.fmt.FMTEngine
+    name: FMT
   - class: org.jlab.rec.cvt.services.CVTSecondPassEngine
     name: CVTSP
   - class: org.jlab.service.ftof.FTOFTBEngine
@@ -54,16 +58,9 @@ services:
   - class: org.jlab.rec.rich.RICHEBEngine
     name: RICH
 configuration:
-#  global:
-#    variation: rgb_spring2019
-#      timestamp: 12/31/2020-00:00:00
   io-services:
     writer:
       compression: 2
-#      schema_dir: /home/clas12/users/devita/dcalign/spring2019/dst
-#      schema_dir: "absolute-path-to-schema-folder"
-#      for example:
-#      schema_dir: "/home/clas12-1/chef/myClara/plugins/clas12/etc/bankdefs/dst"
   services:
     MAGFIELDS:
       magfieldSolenoidMap: Symm_solenoid_r601_phi1_z1201_13June2018.dat
@@ -75,49 +72,16 @@ configuration:
       detectors: "BMT"
       modifyBanks: "true"
     DCCR:
-      variation: rgb_spring2019
+      newSwim: "false"
     DCHB:
-      variation: rgb_spring2019
+      newSwim: "false"
     DCTB:
-      variation: rgb_spring2019
+      newSwim: "false"
+    FMT:
+      newSwim: "false"
     CVTFP:
-#      targetMat: "LD2"
-      variation: rgb_spring2019
-#      beamSpotConst: "0"
+      newSwim: "false"
     CVTSP:
-#      targetMat: "LD2"
-      variation: rgb_spring2019
-#      beamSpotConst: "0"
-    FTCAL:
-      variation: rgb_spring2019
-    FTHODO:
-      variation: rgb_spring2019
-    FTTRK:
-      variation: rgb_spring2019
-    FTEB:
-      variation: rgb_spring2019
-    FTOFHB:
-      variation: rgb_spring2019
-    EC:
-      variation: rgb_spring2019
-    CTOF:
-      variation: rgb_spring2019
-    CND:
-      variation: rgb_spring2019
-    BAND:
-      variation: rgb_spring2019
-    HTCC:
-      variation: rgb_spring2019
-    LTCC:
-      variation: rgb_spring2019
-    EBHB:
-      variation: rgb_spring2019
-    FTOFTB:
-      variation: rgb_spring2019
-    EBTB:
-      variation: rgb_spring2019
-    RICH:
-      variation: rgb_spring2019
-
+      newSwim: "false"
 mime-types:
   - binary/data-hipo
